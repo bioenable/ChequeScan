@@ -23,6 +23,18 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
 import com.squareup.picasso.Picasso;
 
+/**
+ * This activity is responsible for Google Sign In feature. If the user is already signed in OR if
+ * they sign in, it displays their google profile picture (rounded), their name and sign out button.
+ * Otherwise it displays the google sign in button and unknown user picture.
+ * <p>
+ * Libraries used:
+ * 1. Google sign in sdk
+ * 2. Picasso
+ *
+ * @see <a href="https://developers.google.com/identity/sign-in/android/sign-in">Google Sign In Docs</a>
+ * @see <a href="http://square.github.io/picasso/">Picasso Docs</a>
+ */
 public class GoogleSignIn extends AppCompatActivity
         implements GoogleApiClient.OnConnectionFailedListener {
 
@@ -38,6 +50,11 @@ public class GoogleSignIn extends AppCompatActivity
     private String userDisplayName;
     private TextView userNameView;
 
+    /**
+     * Initialises all components and sets button listeners. Check if any users are already signed in.
+     *
+     * @param savedInstanceState bundle
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,6 +65,11 @@ public class GoogleSignIn extends AppCompatActivity
         checkSilentSignIn();
     }
 
+    /**
+     * Updates the UI based on whether the user is logged in or not.
+     *
+     * @param loggedIn boolean value denoting whether user is logged in.
+     */
     private void updateUI(boolean loggedIn) {
         if (loggedIn) {
             signInButton.setVisibility(View.INVISIBLE);
@@ -70,6 +92,9 @@ public class GoogleSignIn extends AppCompatActivity
         }
     }
 
+    /**
+     * Sets button listeners for sign in and sign out buttons.
+     */
     private void initialiseButtonListeners() {
         signInButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -87,7 +112,7 @@ public class GoogleSignIn extends AppCompatActivity
     }
 
     /**
-     * @see <a href="https://developers.google.com/identity/sign-in/android/sign-in">Google Sign In Docs</a>
+     * initialises all UI components and google sign in elements.
      */
     private void initialiseComponents() {
         /*
@@ -95,7 +120,8 @@ public class GoogleSignIn extends AppCompatActivity
          * basic profile are included in DEFAULT_SIGN_IN.
          *
          * Note: If you want to request additional information from the user, specify them with
-         * requestScopes.
+         * requestScopes. See the url below to more information.
+         * https://developers.google.com/identity/sign-in/android/sign-in#configure_google_sign-in_and_the_googleapiclient_object
          */
         GoogleSignInOptions googleSignInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -117,6 +143,14 @@ public class GoogleSignIn extends AppCompatActivity
         userNameView = (TextView) findViewById(R.id.user_name_view);
     }
 
+    /**
+     * This method is called when google sign in returns back to the activity after their code
+     * executes. Handles sign in result.
+     *
+     * @param requestCode used to differentiate which service is returning to the activity
+     * @param resultCode  result code
+     * @param data        the data of the result is held here
+     */
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -127,6 +161,11 @@ public class GoogleSignIn extends AppCompatActivity
         }
     }
 
+    /**
+     * Handles sign in result. If successful updates UI by getting username and profile picture.
+     *
+     * @param result Google Sign In result object which holds all data
+     */
     private void handleSignInResult(GoogleSignInResult result) {
         if (result.isSuccess()) {
             GoogleSignInAccount acct = result.getSignInAccount();
@@ -138,11 +177,17 @@ public class GoogleSignIn extends AppCompatActivity
         }
     }
 
+    /**
+     * Google standard sign in code which starts the sign in process.
+     */
     private void signIn() {
         Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
         startActivityForResult(signInIntent, SIGN_IN_CODE);
     }
 
+    /**
+     * Signs out the current user and updates the user upon logout.
+     */
     private void signOut() {
         Auth.GoogleSignInApi.signOut(mGoogleApiClient).setResultCallback(
                 new ResultCallback<Status>() {
@@ -153,6 +198,10 @@ public class GoogleSignIn extends AppCompatActivity
                 });
     }
 
+    /**
+     * Checks if any user was already signed in and if so updates UI accordingly. Pulls the user
+     * information and starts handleResult method.
+     */
     private void checkSilentSignIn() {
         OptionalPendingResult<GoogleSignInResult> opr = Auth.GoogleSignInApi.silentSignIn(mGoogleApiClient);
         if (opr.isDone()) {
@@ -162,6 +211,11 @@ public class GoogleSignIn extends AppCompatActivity
         }
     }
 
+    /**
+     * The only method of GoogleApiClient.OnConnectionFailedListener interface. If connection is
+     * unsuccessful then shows the following method.
+     * @param connectionResult ConnectionResult object
+     */
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Toast.makeText(this, "Connection Failed", Toast.LENGTH_SHORT).show();
