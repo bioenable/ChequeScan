@@ -2,18 +2,29 @@ package com.bioenable.chequescan;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.FileProvider;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.drive.Drive;
+import com.google.android.gms.drive.DriveFile;
+import com.google.android.gms.drive.DriveId;
+import com.google.android.gms.drive.OpenFileActivityBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,12 +36,13 @@ import java.util.Date;
  * to get the correct picture asked by the user. The user can get the image from:
  * 1. Camera
  * 2. Gallery
- * 3. Google Drive
+ * 3. Google GoogleDrive
  *
  * @author ayushranjan
  * @since 13/08/17.
  */
-public class ImageProvider extends Activity {
+public class ImageProvider extends Activity implements ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
 
     // Instance variables
     private String pathToPhoto;
@@ -39,13 +51,40 @@ public class ImageProvider extends Activity {
     private static final int CAMERA_CODE = 4818;
     private static final int LIBRARY_CODE = 1469;
     private static final int DRIVE_CODE = 1470;
+    private static final int RESOLVE_CONNECTION_REQUEST_CODE = 123;
+
 
     private ImageView image;
     private Button cameraButton;
     private Button galleryButton;
+    private Button googleDriveButton;
+    private GoogleApiClient googleApiClient;
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        if (connectionResult.hasResolution()) {
+            try {
+                connectionResult.startResolutionForResult(this, RESOLVE_CONNECTION_REQUEST_CODE);
+            } catch (IntentSender.SendIntentException e) {
+                // Unable to resolve, message user appropriately
+            }
+        } else {
+            GooglePlayServicesUtil.getErrorDialog(connectionResult.getErrorCode(), this, 0).show();
+        }
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        Toast.makeText(this, "You are connected to Google Drive", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Toast.makeText(this, "Connection Suspended", Toast.LENGTH_SHORT).show();
+    }
 
     private enum ImageSource {
-        Drive, Camera, Library
+        GoogleDrive, Camera, Library
     }
 
     @Override
@@ -56,10 +95,20 @@ public class ImageProvider extends Activity {
         setButtonListeners();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (googleApiClient != null) {
+            // disconnect Google Android Drive API connection.
+            googleApiClient.disconnect();
+        }
+    }
+
     private void initialiseComponents() {
         image = (ImageView) findViewById(R.id.pic);
         cameraButton = (Button) findViewById(R.id.camera_btn);
         galleryButton = (Button) findViewById(R.id.gallery_btn);
+        googleDriveButton = (Button) findViewById(R.id.drive_btn);
     }
 
     private void setButtonListeners() {
@@ -74,6 +123,13 @@ public class ImageProvider extends Activity {
             @Override
             public void onClick(View view) {
                 getImage(ImageSource.Library);
+            }
+        });
+
+        googleDriveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getImage(ImageSource.GoogleDrive);
             }
         });
     }
@@ -91,6 +147,14 @@ public class ImageProvider extends Activity {
 
         if (requestCode == LIBRARY_CODE) {
             pathToPhoto = getRealPathFromURI(data.getData());
+        }
+
+        if (resultCode == DRIVE_CODE) {
+                    /*get the selected item's ID*/
+            DriveId driveId = (DriveId) data.getParcelableExtra(
+                    OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);//this extra contains the drive id of the selected file
+
+            DriveFile file = Drive.DriveApi.getFile(googleApiClient, driveId);
         }
 
         image.setImageBitmap(BitmapFactory.decodeFile(pathToPhoto));
@@ -114,7 +178,7 @@ public class ImageProvider extends Activity {
             case Library:
                 getImageFromGallery();
                 break;
-            case Drive:
+            case GoogleDrive:
                 getImageFromDrive();
         }
     }
@@ -148,7 +212,16 @@ public class ImageProvider extends Activity {
     }
 
     public void getImageFromDrive() {
-
+        if (googleApiClient == null) {
+            googleApiClient = new GoogleApiClient.Builder(this)
+                    .addApi(Drive.API)
+                    .addScope(Drive.SCOPE_FILE)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .build();
+        }
+        
+        googleApiClient.connect();
     }
 
     /**

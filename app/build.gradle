@@ -28,6 +28,7 @@ dependencies {
     compile 'com.android.support.constraint:constraint-layout:1.0.0-beta1'
     compile 'com.android.support:design:25.0.1' // Design API
     compile 'com.google.android.gms:play-services-auth:9.8.0'  // Google Sign-In Auth
+    compile 'com.google.android.gms:play-services:9.8.0'  // Google Drive
     compile 'com.squareup.picasso:picasso:2.5.0' // Picasso Library
     testCompile 'junit:junit:4.12'
 }
