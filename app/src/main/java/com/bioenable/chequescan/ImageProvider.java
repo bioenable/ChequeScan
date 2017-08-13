@@ -24,6 +24,7 @@ import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveId;
+import com.google.android.gms.drive.DriveResource;
 import com.google.android.gms.drive.OpenFileActivityBuilder;
 
 import java.io.File;
@@ -36,7 +37,7 @@ import java.util.Date;
  * to get the correct picture asked by the user. The user can get the image from:
  * 1. Camera
  * 2. Gallery
- * 3. Google GoogleDrive
+ * 3. Google Drive
  *
  * @author ayushranjan
  * @since 13/08/17.
@@ -46,6 +47,13 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
 
     // Instance variables
     private String pathToPhoto;
+    private String urlLinkToFile;
+    private ImageView image;
+    private Button cameraButton;
+    private Button galleryButton;
+    private Button googleDriveButton;
+    private GoogleApiClient googleApiClient;
+
 
     // constants
     private static final int CAMERA_CODE = 4818;
@@ -53,12 +61,6 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
     private static final int DRIVE_CODE = 1470;
     private static final int RESOLVE_CONNECTION_REQUEST_CODE = 123;
 
-
-    private ImageView image;
-    private Button cameraButton;
-    private Button galleryButton;
-    private Button googleDriveButton;
-    private GoogleApiClient googleApiClient;
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
@@ -150,11 +152,13 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
         }
 
         if (resultCode == DRIVE_CODE) {
-                    /*get the selected item's ID*/
-            DriveId driveId = (DriveId) data.getParcelableExtra(
-                    OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);//this extra contains the drive id of the selected file
-
+            //this extra contains the drive id of the selected file
+            DriveId driveId = (DriveId) data.getParcelableExtra(OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);
             DriveFile file = Drive.DriveApi.getFile(googleApiClient, driveId);
+            DriveResource.MetadataResult mdRslt = file.getMetadata(googleApiClient).await();
+            if (mdRslt != null && mdRslt.getStatus().isSuccess()) {
+                urlLinkToFile = mdRslt.getMetadata().getWebContentLink();
+            }
         }
 
         image.setImageBitmap(BitmapFactory.decodeFile(pathToPhoto));
@@ -220,7 +224,7 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
                     .addOnConnectionFailedListener(this)
                     .build();
         }
-        
+
         googleApiClient.connect();
     }
 
