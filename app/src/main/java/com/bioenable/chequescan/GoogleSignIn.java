@@ -226,7 +226,6 @@ public class GoogleSignIn extends AppCompatActivity
     /**
      * The only method of GoogleApiClient.OnConnectionFailedListener interface. If connection is
      * unsuccessful then shows the following method.
-     *
      * @param connectionResult ConnectionResult object
      */
     @Override
