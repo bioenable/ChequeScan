@@ -7,21 +7,6 @@
     android:layout_height="match_parent"
     tools:context="com.bioenable.chequescan.GoogleSignIn">
 
-    <ImageView
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:layout_marginLeft="16dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        android:id="@+id/pic"
-        android:layout_marginRight="8dp"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintHorizontal_bias="0.05"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintVertical_bias="0.853" />
-
     <Button
         android:id="@+id/camera_btn"
         android:layout_width="150dp"
@@ -43,12 +28,12 @@
         app:layout_constraintLeft_toLeftOf="parent"
         android:layout_marginRight="8dp"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintHorizontal_bias="0.12"
+        app:layout_constraintHorizontal_bias="0.111"
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="8dp"
-        app:layout_constraintVertical_bias="0.075" />
+        app:layout_constraintVertical_bias="0.215" />
 
     <Button
         android:id="@+id/gallery_btn"
@@ -76,7 +61,7 @@
         android:layout_marginTop="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="8dp"
-        app:layout_constraintVertical_bias="0.075" />
+        app:layout_constraintVertical_bias="0.215" />
 
     <Button
         android:id="@+id/drive_btn"
@@ -87,7 +72,7 @@
         android:paddingBottom="30dp"
         android:paddingLeft="3dp"
         android:textColor="@color/white"
-        android:drawableTop="@drawable/doclib"
+        android:drawableTop="@drawable/gd"
         android:background="@drawable/rounded_button"
         android:backgroundTint="@color/darkgray"
         android:text="Get image from Google Drive"
@@ -98,10 +83,9 @@
         android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="8dp"
-        app:layout_constraintVertical_bias="0.925"
+        app:layout_constraintVertical_bias="0.972"
         android:layout_marginRight="8dp"
         app:layout_constraintRight_toRightOf="parent"
         android:layout_marginLeft="8dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintHorizontal_bias="0.912" />
+        app:layout_constraintLeft_toLeftOf="parent" />
 </android.support.constraint.ConstraintLayout>
