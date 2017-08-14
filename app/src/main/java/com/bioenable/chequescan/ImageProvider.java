@@ -260,7 +260,11 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
 
     /**
      * Builds the googleApiClient and connects it to Google Drive. Downloads Google Drive contents
-     * attaching driveContentsCallback ResultCallback object.
+     * attaching driveContentsCallback ResultCallback object. A lot of help for getImageFromDrive()
+     * and driveContentsCallback object was taken from the Tutorial linked below.
+     *
+     * @see <a href="https://www.numetriclabz.com/integrate-google-drive-in-android-tutorial/#Read_Google_Drive_file">Tutorial</a>
+     * @see <a href="https://developers.google.com/drive/android/auth">Google Drive Auth docs</a>
      */
     public void getImageFromDrive() {
         if (googleApiClient == null) {
@@ -304,6 +308,7 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
      * @param requestCode determines which method was used to get the image
      * @param resultCode  determined success of that method
      * @param data        contains the file or image
+     * @see <a href="https://developers.google.com/drive/android/files">Saving Drive File Contents</a>
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -339,6 +344,10 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
         }
     }
 
+    /*
+    Some code was taken from the link below.
+    https://stackoverflow.com/questions/31111658/making-local-copy-of-file-using-google-drive-api
+     */
     private ResultCallback<DriveApi.DriveContentsResult> contentsOpenedCallback =
             new ResultCallback<DriveApi.DriveContentsResult>() {
                 @Override
