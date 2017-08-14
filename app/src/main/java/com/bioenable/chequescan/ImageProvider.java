@@ -43,6 +43,10 @@ import java.util.Date;
  * 1. Camera
  * 2. Gallery
  * 3. Google Drive
+ * <p>
+ * Note : The image irrespective of the source is saved in a file in external storage which is
+ * private to the app. The path to that file is held by pathToPhoto by the end of onActivityResult
+ * method. This has been done so that high resolution images can be stored and analysed.
  *
  * @author Ayush Ranjan
  * @since 13/08/17.
@@ -233,6 +237,31 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
         startActivityForResult(Intent.createChooser(intent, "Select Picture"), LIBRARY_CODE);
     }
 
+    /*
+     * GOOGLE DRIVE FUNCTIONALITY
+     *
+     * All the methods below are executed in order when an image has to be downloaded from Google
+     * Drive. The following process follows:
+     *
+     * 1. getImageFromDrive() is called when google drive button is pressed. This is responsible for
+     *    building the googleApiClient and connecting it to Google Drive. It terminates by calling
+     *    driveContentsCallback ResultCallback method.
+     *
+     * 2. driveContentsCallback ResultCallback object starts up the Google Drive interface after
+     *    successfully getting the DriveContents locally. This is done by creating an intentSender
+     *    object (allowing only images to download from Drive) and calling startIntentSenderForResult.
+     *
+     * 3. After the user chooses the image, onActivityResult is triggered where the DriveFile is
+     *    extracted and is opened. A ResultCallback object named contentsOpenedCallback is attached.
+     *
+     * 4. contentsOpenedCallback's onResult method is triggered when the Drive file is successfully
+     *    opened. It further goes to save it on a local file in external memory.
+     */
+
+    /**
+     * Builds the googleApiClient and connects it to Google Drive. Downloads Google Drive contents
+     * attaching driveContentsCallback ResultCallback object.
+     */
     public void getImageFromDrive() {
         if (googleApiClient == null) {
             googleApiClient = new GoogleApiClient.Builder(this)
@@ -269,7 +298,7 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
      * Google Drive and Gallery methods call this method. All three methods of getting image should
      * ultimately give a valid file path to the image.
      * For getting the image from gallery, we just get the path to that image.
-     * For getting the image from Google Drive, we use a resultCallBack function which takes the
+     * For getting the image from Google Drive, we use a resultCallBack object which takes the
      * DriveFile, extracts its contents and fills a File with it.
      *
      * @param requestCode determines which method was used to get the image
@@ -278,6 +307,7 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Return if result is not okay
         if (resultCode != RESULT_OK) {
             if (resultCode == RESULT_CANCELED) {
                 Toast.makeText(this, "Cancelled image capture", Toast.LENGTH_SHORT).show();
@@ -287,13 +317,18 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
             return;
         }
 
-        if (requestCode == RESOLVE_CONNECTION_REQUEST_CODE)
+        // connection failure resolved and fixed
+        if (requestCode == RESOLVE_CONNECTION_REQUEST_CODE) {
+            Toast.makeText(getApplicationContext(), "Connection failure fixed!", Toast.LENGTH_SHORT).show();
             googleApiClient.connect();
+        }
 
+        // photo taken from gallery
         if (requestCode == LIBRARY_CODE) {
             pathToPhoto = getRealPathFromURI(data.getData());
         }
 
+        // photo chosen from Google Drive
         if (requestCode == DRIVE_CODE) {
             //this extra contains the drive id of the selected file
             DriveId driveId = (DriveId) data.getParcelableExtra(OpenFileActivityBuilder.EXTRA_RESPONSE_DRIVE_ID);
@@ -321,7 +356,7 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
                         OutputStream out = new BufferedOutputStream(new FileOutputStream(localFile));
                         InputStream in = contents.getInputStream();
                         int b;
-                        while ( (b = in.read()) >= 0) {
+                        while ((b = in.read()) >= 0) {
                             out.write(b);
                         }
                         in.close();
@@ -335,6 +370,14 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
                 }
             };
 
+
+    /**
+     * Triggered when connection fails. This method tries to resolve the connection failure and if
+     * there is a resolution it solves it by calling startResolutionForResult which is caught by
+     * onActivityResult.
+     *
+     * @param connectionResult ConnectionResult object which contains information about connection status
+     */
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         if (connectionResult.hasResolution()) {
@@ -348,14 +391,23 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
         }
     }
 
+    /**
+     * Triggered when connected to Google Drive
+     *
+     * @param bundle
+     */
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Toast.makeText(this, "You are connected to Google Drive", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Triggered when connection is suspended.
+     *
+     * @param i
+     */
     @Override
     public void onConnectionSuspended(int i) {
         Toast.makeText(this, "Connection Suspended", Toast.LENGTH_SHORT).show();
     }
-
 }
