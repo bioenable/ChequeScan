@@ -4,16 +4,21 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -59,6 +64,7 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
     private static final int LIBRARY_CODE = 1469;
     private static final int DRIVE_CODE = 1470;
     private static final int RESOLVE_CONNECTION_REQUEST_CODE = 123;
+    private static final int PICK_FROM_GALLERY_PERMISSION = 1998;
 
     // Instance variables
     private String pathToPhoto;
@@ -67,6 +73,8 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
     private Button googleDriveButton;
     private GoogleApiClient googleApiClient;
     private ProgressDialog waitingDrivePhotoDownload;
+    private FloatingActionButton backButton;
+    private ImageView pic;
 
     // Enum represents the mode in which the user wants to get the image.
     private enum ImageSource {
@@ -108,6 +116,8 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
         waitingDrivePhotoDownload = new ProgressDialog(this);
         waitingDrivePhotoDownload.setTitle("Downloading image from Google Drive");
         waitingDrivePhotoDownload.setMessage("Please wait...");
+        backButton = (FloatingActionButton) findViewById(R.id.back_btn);
+        pic = (ImageView) findViewById(R.id.image);
     }
 
     /**
@@ -150,6 +160,13 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
             @Override
             public void onClick(View view) {
                 getImage(ImageSource.GoogleDrive);
+            }
+        });
+
+        backButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onBackPressed();
             }
         });
     }
@@ -231,10 +248,49 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
     /**
      * This method simply starts activity fot result with the correct intent to get image from the
      * gallery.
+     * <p>
+     * NOTE: For Android 6 onwards we need to ask permission at run time. Look at link below for more
+     * information. If permission not granted then asks for permission and handles it in
+     * onRequestPermissionsResult method. Otherwise starts getting the image from gallery
+     *
+     * @see <a href="https://developer.android.com/training/permissions/requesting.html"></a>
      */
     public void getImageFromGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(Intent.createChooser(intent, "Select Picture"), LIBRARY_CODE);
+        try {
+            if (ActivityCompat.checkSelfPermission(ImageProvider.this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(ImageProvider.this, new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, PICK_FROM_GALLERY_PERMISSION);
+            } else {
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(Intent.createChooser(intent, "Select Picture"), LIBRARY_CODE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * This is triggered after the user gives permission for access into anything. Checks if permission
+     * is granted then starts the correct intent to get image from gallery. Otherwise, appropriate
+     * message is given out.
+     *
+     * @param requestCode  request code sent in used to determine which method called for permission
+     * @param permissions  permissions object which
+     * @param grantResults int array which contains codes for granted requests
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case PICK_FROM_GALLERY_PERMISSION:
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    startActivityForResult(Intent.createChooser(intent, "Select Picture"), LIBRARY_CODE);
+                } else {
+                    Toast.makeText(getApplicationContext(), "Permission to access gallery was denied.", Toast.LENGTH_SHORT).show();
+                }
+                break;
+        }
     }
 
     /*
@@ -342,6 +398,9 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
             file.open(googleApiClient, DriveFile.MODE_READ_ONLY, null)
                     .setResultCallback(contentsOpenedCallback);
         }
+
+        if (pathToPhoto != null)
+            pic.setImageBitmap(BitmapFactory.decodeFile(pathToPhoto));
     }
 
     /*
@@ -371,6 +430,8 @@ public class ImageProvider extends Activity implements ConnectionCallbacks,
                         in.close();
                         out.close();
                         waitingDrivePhotoDownload.cancel();
+                        if (pathToPhoto != null)
+                            pic.setImageBitmap(BitmapFactory.decodeFile(pathToPhoto));
                     } catch (Exception e) {
                         waitingDrivePhotoDownload.cancel();
                         Toast.makeText(getApplicationContext(), "This file could not be read.", Toast.LENGTH_SHORT).show();
